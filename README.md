@@ -10,6 +10,11 @@ ModelRank runs locally via Docker and provides a sleek terminal-themed UI to cre
 
 ---
 
+![Compare Models](CompareModels.png)
+
+![Evaluation Run](NewRun.png)
+
+![Run Details](RunView.png)
 
 ## Key Features
 
