@@ -1,0 +1,332 @@
+{
+  "categories": {
+    "01_orchestration": "Orchestration",
+    "02_coding": "Coding",
+    "03_code_review": "Code Review",
+    "04_research": "Research & Summarization",
+    "05_instruction_following": "Instruction Following",
+    "06_error_recovery": "Error Recovery",
+    "07_writing": "Writing & Communication"
+  },
+  "tiers": {
+    "quick": ["orch-01", "code-01", "inst-01", "err-01"],
+    "standard": ["orch-01", "orch-02", "code-01", "code-02", "code-03", "review-01", "research-01", "inst-01", "err-01", "write-01"],
+    "deep": ["orch-01", "orch-02", "orch-03", "code-01", "code-02", "code-03", "code-04", "review-01", "review-02", "research-01", "research-02", "inst-01", "inst-02", "err-01", "err-02", "write-01", "write-02"]
+  },
+  "prompts": [
+    {
+      "id": "orch-01",
+      "category": "01_orchestration",
+      "name": "Task Decomposition",
+      "prompt": "A product manager comes to you with a vague but important request: 'Build me a dashboard that shows our sales data.' The dashboard needs to work across different team members (sales, finance, operations), display different data based on user role, and integrate with our existing CRM and accounting system.\n\nYour task is to decompose this request into concrete, actionable subtasks. For each subtask, identify: the specific deliverable, any dependencies on other subtasks, estimated effort (small/medium/large), and the recommended execution order. Also provide reasoning for your prioritization and any assumptions you're making about the requirements.\n\nConsider technical requirements (backend API design, frontend architecture, data pipelines), integration points with existing systems, and go-live readiness criteria.",
+      "expected_traits": [
+        "Clear subtask breakdown with specific deliverables",
+        "Explicit dependency identification and graph",
+        "Effort estimation with clear rationale",
+        "Prioritization reasoning",
+        "Assumption documentation",
+        "Technical architecture considerations"
+      ],
+      "test_script": null,
+      "tiers": ["quick", "standard", "deep"]
+    },
+    {
+      "id": "orch-02",
+      "category": "01_orchestration",
+      "name": "Ambiguous Requirements",
+      "prompt": "Your product manager says: 'Make the search faster and also it should handle typos.' This is vague and contains multiple potential interpretations that would lead to very different technical approaches.\n\nYour task is to: (1) Identify all the ambiguities and unclear aspects of this requirement, (2) Ask 5-7 clarifying questions that would help you understand the actual needs, (3) Propose 3 different interpretations of what the PM might mean, and (4) For each interpretation, outline the technical implementation approach, the tradeoffs involved, rough effort estimate, and the pros/cons.\n\nConsider questions about: current performance baselines, acceptable latency targets, what 'handle typos' means (fuzzy matching? spell correction?), which search index/engine is being used, and whether this is about search performance or perceived performance.",
+      "expected_traits": [
+        "Comprehensive ambiguity identification",
+        "Thoughtful clarifying questions",
+        "Multiple distinct interpretations",
+        "Implementation approaches for each interpretation",
+        "Tradeoff analysis",
+        "Effort estimation",
+        "Clear reasoning for each option"
+      ],
+      "test_script": null,
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "orch-03",
+      "category": "01_orchestration",
+      "name": "Escalation Decision",
+      "prompt": "You're an AI coding assistant helping a user with their application. The user asks: 'I need to modify our production database migration that drops a column containing user payment data. The migration has already been partially applied to staging. I already have a backup, so just help me write the script.'\n\nYour task is to: (1) Analyze the risks involved in this operation, (2) Explicitly decide whether you should proceed with helping them or escalate/refuse this request, (3) Explain your reasoning in detail, including regulatory and business implications, (4) Identify what verification steps they should complete before you'd help, and (5) Explain under what circumstances you would feel comfortable assisting.\n\nConsider data retention compliance (GDPR, CCPA, PCI-DSS for payment data), the implications of dropping vs archiving data, the soundness of their backup strategy, whether this decision should involve other stakeholders, and the potential for data loss if something goes wrong.",
+      "expected_traits": [
+        "Thorough risk assessment",
+        "Data loss implications analysis",
+        "Regulatory/compliance considerations",
+        "Clear escalation decision with reasoning",
+        "Verification steps identification",
+        "Stakeholder involvement considerations",
+        "Recovery procedures review"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    },
+    {
+      "id": "code-01",
+      "category": "02_coding",
+      "name": "Auth Bug Fix",
+      "prompt": "Here's a Node.js authentication middleware that has multiple bugs related to Bearer token parsing. The function is supposed to extract and verify Bearer tokens from the Authorization header, but it fails in several edge cases including when the token contains special characters, when there's extra whitespace, and when the header format is slightly different.\n\n```javascript\nfunction authMiddleware(req, res, next) {\n  const auth = req.headers.authorization;\n  if (!auth) return res.status(401).json({error: 'No token'});\n  const token = auth.split('Bearer')[1];\n  if (!token) return res.status(401).json({error: 'Invalid format'});\n  verify(token).then(user => { req.user = user; next(); }).catch(() => res.status(403).json({error: 'Invalid token'}));\n}\n```\n\nYour task is to: (1) Identify all the bugs in this code, (2) Fix them with proper Bearer token parsing, (3) Add robust edge case handling (extra whitespace, case sensitivity, malformed headers), (4) Improve error handling to distinguish between different failure modes, and (5) Add comments explaining the fix.\n\nConsider real-world scenarios like 'bearer' in lowercase, 'BEARER' in uppercase, multiple spaces, tabs, and completely malformed Authorization headers.",
+      "expected_traits": [
+        "Correct Bearer prefix extraction",
+        "Trim and whitespace handling",
+        "Case-insensitive prefix matching",
+        "Edge case coverage",
+        "Improved error handling",
+        "Clear comments",
+        "Proper Promise error handling"
+      ],
+      "test_script": "tests/code-01.sh",
+      "tiers": ["quick", "standard", "deep"]
+    },
+    {
+      "id": "code-02",
+      "category": "02_coding",
+      "name": "Rate Limiter",
+      "prompt": "Design and implement an in-memory rate limiter middleware for Express.js that enforces rate limiting on a per-IP basis. The requirements are: (1) Limit each IP to 100 requests per 15-minute sliding window, (2) Return HTTP 429 (Too Many Requests) when the limit is exceeded, (3) Include a Retry-After header in the 429 response indicating how many seconds until the client can retry, (4) Automatically clean up expired rate limit entries from memory to prevent unbounded memory growth, and (5) Provide a reset endpoint for testing purposes that clears all rate limit data.\n\nYour task is to: (1) Implement the middleware function with the above requirements, (2) Choose an appropriate data structure for tracking requests (consider Map, or custom objects), (3) Handle the sliding window correctly, (4) Implement the cleanup mechanism, (5) Add the reset endpoint, and (6) Consider edge cases like very high traffic or clock skew.\n\nThe middleware should integrate cleanly with Express and should not use external dependencies for the core rate limiting logic.",
+      "expected_traits": [
+        "Correct sliding window implementation",
+        "Per-IP tracking",
+        "429 status code with Retry-After header",
+        "Memory cleanup mechanism",
+        "Reset endpoint implementation",
+        "Edge case handling",
+        "Clean Express middleware pattern"
+      ],
+      "test_script": "tests/code-02.sh",
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "code-03",
+      "category": "02_coding",
+      "name": "Callback Refactoring",
+      "prompt": "Here's a classic callback-hell Node.js function that processes an order through multiple async steps: fetching the order from the database, charging the payment method, reserving inventory, and sending a confirmation email. The current implementation is deeply nested and difficult to follow.\n\n```javascript\nfunction processOrder(orderId, callback) {\n  db.getOrder(orderId, function(err, order) {\n    if (err) return callback(err);\n    payment.charge(order.total, order.paymentMethod, function(err, receipt) {\n      if (err) return callback(err);\n      inventory.reserve(order.items, function(err, reservation) {\n        if (err) { payment.refund(receipt.id, function() { callback(err); }); return; }\n        email.send(order.customerEmail, receipt, reservation, function(err) {\n          if (err) console.log('Email failed:', err);\n          callback(null, { order, receipt, reservation });\n        });\n      });\n    });\n  });\n}\n```\n\nYour task is to: (1) Refactor this into clean async/await syntax, (2) Preserve all error handling semantics (note that payment refund happens on inventory failure), (3) Define custom error classes for different failure types, (4) Implement proper compensation logic (refunds on failure), (5) Make the code maintainable and testable, and (6) Add JSDoc comments.\n\nConsider that email failures should not fail the entire order, but payment and inventory failures should, with rollback.",
+      "expected_traits": [
+        "Clean async/await syntax",
+        "Preserved error handling semantics",
+        "Custom error types/classes",
+        "Compensation/rollback logic",
+        "Email non-fatal error handling",
+        "JSDoc comments",
+        "Improved readability and maintainability"
+      ],
+      "test_script": null,
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "code-04",
+      "category": "02_coding",
+      "name": "Docker Compose Authoring",
+      "prompt": "You need to create a docker-compose.yml file for a microservices-based application architecture. The system consists of: (1) A Node.js API service running on port 3000 that handles REST requests, (2) PostgreSQL 16 database that needs persistent storage and should survive container restarts, (3) Redis cache service for session storage and caching, and (4) Nginx reverse proxy running on port 80 that routes traffic to the Node.js API with load balancing and SSL termination support.\n\nYour task is to: (1) Write a complete docker-compose.yml that defines all four services, (2) Set up proper networking so services can communicate by service name, (3) Configure persistent volumes for both PostgreSQL data and Redis persistence, (4) Implement health checks for each service to ensure they're ready before dependent services start, (5) Set appropriate restart policies for production-like behavior, (6) Handle environment variables for configuration (database credentials, API port, Redis host, etc.), (7) Ensure proper service initialization order using depends_on or health checks, and (8) Use specific version tags for production stability.\n\nConsider security (not storing credentials in the file), service interdependencies, data persistence, and debugging capabilities.",
+      "expected_traits": [
+        "Correct service definitions",
+        "Proper networking configuration",
+        "Persistent volume setup",
+        "Health check implementation",
+        "Restart policies",
+        "Environment variable handling",
+        "Service dependency management",
+        "Version pinning",
+        "Production readiness"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    },
+    {
+      "id": "review-01",
+      "category": "03_code_review",
+      "name": "Security Review",
+      "prompt": "Review the following Express.js route handler for security vulnerabilities and provide specific fixes. This route is designed to search for users and is exposed as a public API endpoint.\n\n```javascript\napp.post('/api/users/search', (req, res) => {\n  const query = `SELECT * FROM users WHERE name LIKE '%${req.body.search}%' OR email = '${req.body.email}'`;\n  db.query(query).then(users => {\n    res.json(users);\n    logger.info(`Search performed: ${req.body.search} by ${req.ip}`);\n  });\n});\n```\n\nYour task is to: (1) Identify all security vulnerabilities in this code, (2) Explain the potential impact of each vulnerability, (3) Provide a corrected version of the code, (4) Explain how each fix addresses the vulnerability, (5) Consider additional security concerns beyond the obvious ones, and (6) Suggest security best practices for this endpoint.\n\nThink about: SQL injection, input validation, data exposure (returning all columns), error handling (stack traces), logging concerns (storing sensitive search terms), rate limiting, and authentication/authorization.",
+      "expected_traits": [
+        "SQL injection identification",
+        "Input validation recommendations",
+        "Parameterized query usage",
+        "Data exposure awareness",
+        "Error handling security",
+        "Logging security concerns",
+        "Rate limiting consideration",
+        "Authentication/authorization checks",
+        "Clear explanations of impact"
+      ],
+      "test_script": null,
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "review-02",
+      "category": "03_code_review",
+      "name": "Performance Review (N+1)",
+      "prompt": "Review the following async function for performance issues, specifically the N+1 query problem. This function is called frequently and is a known bottleneck in the application. The function retrieves team information and constructs a dashboard with detailed member information.\n\n```javascript\nasync function getTeamDashboard(teamId) {\n  const team = await Team.findById(teamId);\n  const members = await Member.find({ teamId });\n  const dashboard = { team: team.name, members: [] };\n  for (const member of members) {\n    const tasks = await Task.find({ assignee: member.id });\n    const reviews = await Review.find({ reviewer: member.id });\n    const activity = await ActivityLog.find({ userId: member.id }).sort('-date').limit(5);\n    dashboard.members.push({\n      name: member.name,\n      taskCount: tasks.length,\n      avgReviewScore: reviews.reduce((a,r) => a + r.score, 0) / reviews.length,\n      recentActivity: activity\n    });\n  }\n  return dashboard;\n}\n```\n\nYour task is to: (1) Identify the N+1 query problem(s) and explain the performance impact, (2) Propose optimized solutions using batch queries, (3) Implement solutions using aggregation pipelines if using MongoDB, or joins/subqueries if using SQL, (4) Consider caching strategies for data that changes infrequently, (5) Estimate the performance improvement, and (6) Discuss tradeoffs between different optimization approaches.\n\nConsider that there are 5-100 members per team and the function is called in a dashboard that's refreshed frequently.",
+      "expected_traits": [
+        "N+1 query problem identification",
+        "Performance impact analysis",
+        "Batch query suggestions",
+        "Aggregation pipeline approach",
+        "Join/subquery optimization",
+        "Caching strategy",
+        "Performance improvement estimates",
+        "Tradeoff analysis",
+        "Code implementation"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    },
+    {
+      "id": "research-01",
+      "category": "04_research",
+      "name": "WebSocket Protocol Summary",
+      "prompt": "Explain the WebSocket protocol in depth. Your explanation should cover: (1) How WebSockets establish a connection (the HTTP upgrade mechanism and the complete handshake process), (2) The WebSocket frame format including opcodes and how frames are encoded, (3) Control frames including ping/pong frames and their purpose in keeping connections alive, (4) The close handshake process and how connections are cleanly terminated, (5) Security considerations specific to WebSockets (origin checking, masking, frame size limits), and (6) How WebSockets differ from and compare with alternative technologies like Server-Sent Events (SSE) and long polling.\n\nAlso address: When would you choose WebSockets over SSE? When is long polling still appropriate? What are the deployment considerations (proxy support, firewall rules)? How do you handle authentication and authorization over WebSocket connections?\n\nYour response should be technically accurate and suitable for a developer who needs to make architectural decisions about real-time communication.",
+      "expected_traits": [
+        "Accurate HTTP upgrade handshake description",
+        "Frame format and opcode details",
+        "Ping/pong mechanism explanation",
+        "Close handshake process",
+        "Security considerations",
+        "SSE vs WebSocket comparison",
+        "Long polling comparison",
+        "Use case guidance",
+        "Deployment considerations",
+        "Authentication discussion"
+      ],
+      "test_script": null,
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "research-02",
+      "category": "04_research",
+      "name": "PostgreSQL vs SQLite Comparison",
+      "prompt": "You're evaluating databases for a new project. Compare PostgreSQL and SQLite across multiple dimensions to help make an informed decision. Your comparison should cover: (1) Architecture differences (in-process vs client-server), (2) Concurrency models and how each handles simultaneous writes, (3) Data type support and advanced features, (4) Maximum database size and scaling characteristics, (5) Performance characteristics under different loads, (6) Deployment and operational complexity, (7) Backup and disaster recovery strategies, (8) Cost considerations, and (9) Clear guidance on when to choose each database.\n\nFor each dimension, provide concrete examples. For instance: when would SQLite's lack of concurrent writes matter? What does PostgreSQL's MVCC do better than SQLite's WAL? How do you backup and restore each system? What's the typical disk I/O pattern for each?\n\nAlso address: Can you start with SQLite and migrate to PostgreSQL later? What are migration challenges? What are the operational differences in production? How do you monitor and optimize each database?",
+      "expected_traits": [
+        "Accurate architecture comparison",
+        "Concurrency model explanation",
+        "Data type and feature comparison",
+        "Scaling characteristics",
+        "Performance analysis",
+        "Deployment complexity discussion",
+        "Backup strategy comparison",
+        "Cost analysis",
+        "Clear recommendations with justification",
+        "Migration path discussion"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    },
+    {
+      "id": "inst-01",
+      "category": "05_instruction_following",
+      "name": "Strict JSON Format",
+      "prompt": "Generate a JSON object representing a software project status report. The object MUST have EXACTLY these keys (no more, no less): project_name (a string), status (one of exactly these values: \"on_track\", \"at_risk\", or \"blocked\"), completion_percentage (an integer between 0 and 100 inclusive), milestones (an array of objects where each object has a name field and a done boolean field), risks (an array of strings), and next_actions (an array of strings with a maximum of 3 items).\n\nCreate a realistic project status report. Use plausible values. Output ONLY the JSON object with no additional text. Do not use markdown code fences. Do not include any explanation, preamble, or description before or after the JSON. Output valid, properly formatted JSON that can be parsed by a JSON parser.",
+      "expected_traits": [
+        "Valid JSON syntax",
+        "Exactly the required keys",
+        "Correct value types",
+        "Correct enum values for status",
+        "Percentage in valid range",
+        "Proper milestone structure",
+        "Risk array of strings",
+        "Next actions with max 3 items",
+        "No markdown fences",
+        "No additional explanation"
+      ],
+      "test_script": "tests/inst-01.sh",
+      "tiers": ["quick", "standard", "deep"]
+    },
+    {
+      "id": "inst-02",
+      "category": "05_instruction_following",
+      "name": "Constrained Python Function",
+      "prompt": "Write a Python function named `extract_emails` that takes a single string parameter and returns a list of valid email addresses found in that string. The function MUST follow these constraints: (1) Do NOT use the `re` module or any regular expressions, (2) Use only built-in string methods for parsing, (3) Include full type hints on the function signature and any type hints on variables where appropriate, (4) Include exactly 3 assertion-based test cases placed after the function definition that validate the function works correctly.\n\nThe function should correctly identify valid email addresses in various contexts (emails in the middle of text, multiple emails, emails with various valid characters). Make the test cases realistic and cover different scenarios.\n\nExample of what NOT to do: Do not use `re.findall` or any regex pattern matching. This must be solved with string methods like `split()`, `find()`, `index()`, etc.",
+      "expected_traits": [
+        "Function named extract_emails",
+        "No regex module usage",
+        "String methods only",
+        "Complete type hints",
+        "Exactly 3 assertion test cases",
+        "Correct email identification",
+        "Handles multiple emails",
+        "Assertion-based tests"
+      ],
+      "test_script": "tests/inst-02.sh",
+      "tiers": ["deep"]
+    },
+    {
+      "id": "err-01",
+      "category": "06_error_recovery",
+      "name": "Docker Networking Diagnosis",
+      "prompt": "A user reports a connectivity issue with their Docker containers. Here's their situation: 'I have a Node.js application running in a Docker container that needs to connect to a PostgreSQL database also running in a Docker container. Both containers are running according to `docker ps`, but my Node.js app can't connect to the database. I'm using `localhost:5432` as my connection string, but I get a connection refused error. I've verified the containers are up, the PostgreSQL container is listening on port 5432, and the credentials are correct. What's wrong?'\n\nYour task is to: (1) Diagnose the root cause of this connectivity issue, (2) Explain why `localhost` doesn't work in this context, (3) Explain how Docker container networking works and how containers discover each other, (4) Provide the correct connection string and explain why it works, (5) Explain the difference between using docker run with `--link` vs docker-compose vs custom networks, (6) Explain how to verify the fix is working (network inspection commands), and (7) Suggest how to structure the solution for different deployment scenarios (docker-compose, Docker Swarm, Kubernetes).",
+      "expected_traits": [
+        "Correct root cause identification",
+        "Container networking explanation",
+        "Service name resolution explanation",
+        "Docker bridge network discussion",
+        "Correct connection string",
+        "docker-compose networking explanation",
+        "Network inspection commands",
+        "Verification steps",
+        "Scalable solution approaches"
+      ],
+      "test_script": null,
+      "tiers": ["quick", "standard", "deep"]
+    },
+    {
+      "id": "err-02",
+      "category": "06_error_recovery",
+      "name": "NPM Peer Dependency Conflict",
+      "prompt": "A user encounters an npm installation error with peer dependency conflicts. Here's the error message they receive:\n\n```\nnpm ERR! ERESOLVE unable to resolve dependency tree\nnpm ERR! peer dep missing: react@\"^17.0.0\", required by some-legacy-lib@2.3.1\nnpm ERR! node_modules/some-legacy-lib\nnpm ERR!   some-legacy-lib@\"^2.3.0\" from the root project\nnpm ERR! Could not resolve dependency:\nnpm ERR! peer react@\"^17.0.0\" from some-legacy-lib@2.3.1\nnpm ERR! Conflicting peer dependency: react@17.0.2\nnpm ERR! Fix the upstream dependency conflict...\n```\n\nThe user's project currently uses React 18, but they need to install `some-legacy-lib` which was designed for React 17. The user is confused about what's happening and what they should do.\n\nYour task is to: (1) Explain what peer dependencies are and why this error occurs, (2) Analyze the specific conflict in their situation, (3) Provide 4-5 different resolution strategies ranked by preference, (4) Explain the tradeoffs and risks of each approach, (5) Provide the specific commands for each strategy, (6) Recommend which approach is best for different scenarios (short-term vs long-term solutions), and (7) Explain how to verify that the chosen solution is safe and won't cause runtime errors.",
+      "expected_traits": [
+        "Peer dependency explanation",
+        "Clear conflict analysis",
+        "Multiple resolution strategies",
+        "Strategy ranking with justification",
+        "Tradeoff analysis",
+        "Specific command examples",
+        "Risk assessment for each approach",
+        "Scenario-based recommendations",
+        "Verification methods",
+        "Long-term vs short-term considerations"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    },
+    {
+      "id": "write-01",
+      "category": "07_writing",
+      "name": "Changelog Entry",
+      "prompt": "Write a changelog entry in the style of Keep a Changelog format for an upcoming software release. The release includes the following changes that need to be documented:\n\n1. A new real-time collaboration feature that allows multiple users to edit the same document simultaneously with live cursor positions and change notifications.\n2. A fix for a critical memory leak bug in the WebSocket handler that was causing the application to consume increasing amounts of RAM over time.\n3. Deprecation of the legacy REST polling endpoint that's being replaced by WebSocket-based real-time updates (users should migrate their integrations by version 4.0).\n4. A breaking change to the authentication API where JWT tokens now use RS256 (asymmetric) signing instead of HS256 (symmetric) signing, which affects token validation for external services.\n\nYour task is to: (1) Write the changelog entry following Keep a Changelog conventions, (2) Properly categorize each change under the correct heading (Added/Fixed/Deprecated/Changed/Removed), (3) Write clear, concise descriptions that would help users understand the changes, (4) Include migration guidance for deprecated features, (5) Highlight breaking changes clearly, and (6) Provide upgrade instructions where appropriate.",
+      "expected_traits": [
+        "Keep a Changelog format",
+        "Correct categorization (Added/Fixed/Deprecated/Changed)",
+        "Clear, user-focused descriptions",
+        "Breaking change highlighting",
+        "Deprecation migration guidance",
+        "Professional writing quality",
+        "Proper formatting and structure",
+        "Version and date information"
+      ],
+      "test_script": null,
+      "tiers": ["standard", "deep"]
+    },
+    {
+      "id": "write-02",
+      "category": "07_writing",
+      "name": "Environment Variables README",
+      "prompt": "Write a comprehensive README section that documents all environment variables for a Node.js backend application. The application uses the following environment variables that need to be documented:\n\n1. DATABASE_URL - Connection string for PostgreSQL\n2. REDIS_URL - Connection string for Redis cache\n3. JWT_SECRET - Secret key for signing JWT tokens\n4. API_RATE_LIMIT - Number of requests allowed per minute\n5. LOG_LEVEL - Controls logging verbosity\n6. CORS_ORIGINS - Comma-separated list of allowed origins for CORS\n7. SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS - Email configuration\n\nYour task is to: (1) Write a well-structured README section with a clear heading, (2) For each variable, provide: a clear description of its purpose, an example value that demonstrates correct usage, whether it's required or optional, and the default value if optional, (3) Use consistent formatting and organization, (4) Include a note about security considerations (never commit .env files), (5) Provide instructions for setting up environment variables in different environments (development, staging, production), (6) Include any validation or format requirements for each variable, and (7) Provide examples of a properly formatted .env file.\n\nMake it suitable for both new developers onboarding and operations teams deploying the application.",
+      "expected_traits": [
+        "Clear section heading and organization",
+        "Complete variable descriptions",
+        "Realistic example values",
+        "Required vs optional indication",
+        "Default values documented",
+        "Consistent formatting",
+        "Security considerations",
+        "Setup instructions for different environments",
+        "Format/validation requirements",
+        ".env file example",
+        "Professional writing quality"
+      ],
+      "test_script": null,
+      "tiers": ["deep"]
+    }
+  ]
+}

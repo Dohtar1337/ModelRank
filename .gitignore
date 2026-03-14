@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Build output
+dist/
+dashboard/dist/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Sensitive config (keys and personal settings)
+data/config/keys.json
+data/config/settings.json
+
+# Evaluation results (user-generated data)
+data/results/*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
