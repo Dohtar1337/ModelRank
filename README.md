@@ -5,6 +5,11 @@
 ModelRank runs locally via Docker and provides a sleek terminal-themed UI to create evaluation runs, inspect results, and rank models by quality, speed, and cost.
 
 ---
+### ☕ Support this project
+**BTC:** `bc1q24qhjfhyudqkldn5lc9vemgpfv9hesanvcw70d`
+
+---
+
 
 ## Key Features
 
