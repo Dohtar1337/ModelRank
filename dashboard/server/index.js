@@ -273,16 +273,19 @@ app.put('/api/config/settings', (req, res) => {
 });
 
 // GET /api/config/providers
+// Always returns a flat object: { openrouter: {...}, llamacpp: {...} }
 app.get('/api/config/providers', (req, res) => {
   try {
     const providersPath = path.join(EVAL_DIR, 'config', 'providers.json');
-    let providers = readJSON(providersPath);
+    let data = readJSON(providersPath);
 
-    if (!providers) {
-      providers = getDefaultProviders();
-      writeJSON(providersPath, providers);
+    if (!data) {
+      data = getDefaultProviders();
+      writeJSON(providersPath, data);
     }
 
+    // Unwrap if stored with { providers: { ... } } wrapper
+    const providers = data.providers || data;
     res.json(providers);
   } catch (error) {
     console.error('Error in GET /api/config/providers:', error.message);
@@ -291,16 +294,20 @@ app.get('/api/config/providers', (req, res) => {
 });
 
 // PUT /api/config/providers
+// Accepts flat object from frontend, always stores with { providers: { ... } } wrapper
 app.put('/api/config/providers', (req, res) => {
   try {
     const providersPath = path.join(EVAL_DIR, 'config', 'providers.json');
-    const success = writeJSON(providersPath, req.body);
+    // Normalize: if frontend sends flat object, wrap it; if already wrapped, use as-is
+    const providers = req.body.providers || req.body;
+    const toStore = { providers };
+    const success = writeJSON(providersPath, toStore);
 
     if (!success) {
       return res.status(500).json({ error: 'Failed to write providers' });
     }
 
-    res.json({ success: true, data: req.body });
+    res.json({ success: true, data: providers });
   } catch (error) {
     console.error('Error in PUT /api/config/providers:', error.message);
     res.status(500).json({ error: error.message });
